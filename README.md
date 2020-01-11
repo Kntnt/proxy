@@ -71,10 +71,11 @@ Users of Linux and Mac OS X can use [a Bash scrip](https://github.com/Kntnt/prox
 
 ### Install the script
 
-1. Save the script below as a file named `proxy`.
-2. Review `DEFAULT_SERVER` and the other global variables of the script.
+1. Clone or [download](https://github.com/Kntnt/proxy/archive/master.zip) this repository.
+2. Review `DEFAULT_SERVER` and the other global variables of the script `proxy`.
 3. Give yourself right to execute the file: `chmod +x proxy`.
 4. Move the script to a directory on your path: `mv proxy /usr/local/bin`.
 5. Let it create the PAC file: `proxy reset`.
+6. Configure your web browser to use SOCKS5 and Proxy DNS (see above).
 
 You are now ready to use the script.
