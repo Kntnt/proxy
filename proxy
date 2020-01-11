@@ -54,7 +54,7 @@ function start() {
 
 	local socket="$SOCKET_DIR/.proxy-$1"
 
-	if [[ -f $socket ]]; then
+	if [[ -S $socket ]]; then
 		echo "There is already a proxy for $1."
 		exit 3
 	fi
@@ -66,13 +66,22 @@ function start() {
 }
 
 function stop() {
+
+	local socket="$SOCKET_DIR/.proxy-$1"
+
+	if [[ ! -S $socket ]]; then
+		echo "There is no proxy for $1."
+		exit 4
+	fi
+
 	echo -n "Stopping proxy for $1. "
 	ssh -S "$SOCKET_DIR/.proxy-$1" -O exit $PROXY_HOST
 	$GNU_SED_COMMAND -r "/dnsDomainIs\(host, \"$1\"\)/d" -i "$PAC_FILE"
+
 }
 
 function list() {
-	local socket;
+	local socket
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Checking proxy for ${socket##*.proxy-}: "
     	ssh -S "$socket" -O check $PROXY_HOST
@@ -81,7 +90,7 @@ function list() {
 
 function reset() {
 
-	local socket;
+	local socket
 
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Stopping proxy for ${socket##*.proxy-}. "
