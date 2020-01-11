@@ -67,7 +67,7 @@ As soon as you stop the proxy, you will be back on the production site when visi
 
 ## Script
 
-Users of Linux and Mac OS X can use the script below to easily start and stop proxies.
+Users of Linux and Mac OS X can use [a Bash scrip](https://github.com/Kntnt/proxy/blob/master/proxy) to easily start and stop proxies.
 
 ### Install the script
 
