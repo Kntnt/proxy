@@ -110,7 +110,6 @@ else
 	echo "Usage: $(basename $0) start <domain> [<server>]"
 	echo "Usage: $(basename $0) stop <domain>"
 	echo "Usage: $(basename $0) reset"
-	echo
-	echo "Ses also https://gist.github.com/TBarregren/dba8ce07894af4464b68ea8054830e7b"
+	echo "See:   https://github.com/Kntnt/proxy"
 	exit 1
 fi
