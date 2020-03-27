@@ -42,12 +42,17 @@ PROXY_PORT=8888
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	GNU_SED_COMMAND=sed
 	GNU_FIND=find
-elif [[ "$OSTYPE" == "darwin"* ]] &&  which gsed > /dev/null && which gfind > /dev/null; then
-	GNU_SED_COMMAND=gsed
-	GNU_FIND=gfind
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	if which gsed > /dev/null && which gfind > /dev/null; then
+		GNU_SED_COMMAND=gsed
+		GNU_FIND=gfind
+	else
+		echo "Install GNU sed and GNU find."
+		exit 2
+	fi
 else
-	echo "Install GNU sed and GNU find."
-	exit 2
+	echo "This script is developed for GNU Linux and Mac OS X with GNU sed and find."
+	exit 3
 fi
 
 function start() {
@@ -56,7 +61,7 @@ function start() {
 
 	if [[ -S $socket ]]; then
 		echo "There is already a proxy for $1."
-		exit 3
+		exit 4
 	fi
 
 	echo "Starting proxy for $1."
@@ -71,7 +76,7 @@ function stop() {
 
 	if [[ ! -S $socket ]]; then
 		echo "There is no proxy for $1."
-		exit 4
+		exit 5
 	fi
 
 	echo -n "Stopping proxy for $1. "
@@ -119,6 +124,7 @@ else
 	echo "Usage: $(basename $0) start <domain> [<server>]"
 	echo "Usage: $(basename $0) stop <domain>"
 	echo "Usage: $(basename $0) reset"
+	echo "Usage: $(basename $0) list"
 	echo "See:   https://github.com/Kntnt/proxy"
 	exit 1
 fi
