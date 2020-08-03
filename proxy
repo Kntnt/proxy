@@ -37,17 +37,17 @@ SOCKET_DIR="$HOME"
 
 PROXY_HOST=127.0.0.1
 
-PROXY_PORT=8888
-
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	GNU_SED_COMMAND=sed
+	GNU_SED=sed
 	GNU_FIND=find
+	GNU_GREP=grep
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	if which gsed > /dev/null && which gfind > /dev/null; then
-		GNU_SED_COMMAND=gsed
+		GNU_SED=gsed
 		GNU_FIND=gfind
+		GNU_GREP=ggrep
 	else
-		echo "Install GNU sed and GNU find."
+		echo "Install GNU sed, GNU find and GNU grep."
 		exit 2
 	fi
 else
@@ -59,14 +59,16 @@ function start() {
 
 	local socket="$SOCKET_DIR/.proxy-$1"
 
+	local port=$(comm -23 <(seq 49152 65535) <(netstat -an | $GNU_GREP LISTEN | awk -F '  +' '{print $4}' | $GNU_GREP -Po "\d+$") | shuf | head -n 1)
+
 	if [[ -S $socket ]]; then
 		echo "There is already a proxy for $1."
 		exit 4
 	fi
 
 	echo "Starting proxy for $1."
-    ssh -MS "$SOCKET_DIR/.proxy-$1" -fnNT -D 0.0.0.0:$PROXY_PORT $2
-	$GNU_SED_COMMAND -r "/^\s*return \"DIRECT\";\s*$/i \\\\tif (dnsDomainIs(host, \"$1\")) return \"SOCKS5 $PROXY_HOST:$PROXY_PORT; DIRECT\";" -i "$PAC_FILE"
+    ssh -MS "$SOCKET_DIR/.proxy-$1" -fnNT -D 0.0.0.0:$port $2
+	$GNU_SED -r "/^\s*return \"DIRECT\";\s*$/i \\\\tif (dnsDomainIs(host, \"$1\")) return \"SOCKS5 $PROXY_HOST:$port; DIRECT\";" -i "$PAC_FILE"
 
 }
 
@@ -81,16 +83,19 @@ function stop() {
 
 	echo -n "Stopping proxy for $1. "
 	ssh -S "$SOCKET_DIR/.proxy-$1" -O exit $PROXY_HOST
-	$GNU_SED_COMMAND -r "/dnsDomainIs\(host, \"$1\"\)/d" -i "$PAC_FILE"
+	$GNU_SED -r "/dnsDomainIs\(host, \"$1\"\)/d" -i "$PAC_FILE"
 
 }
 
 function list() {
+
 	local socket
+	
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Checking proxy for ${socket##*.proxy-}: "
-    	ssh -S "$socket" -O check $PROXY_HOST
+		ssh -S "$socket" -O check $PROXY_HOST
 	done
+
 }
 
 function reset() {
@@ -99,7 +104,7 @@ function reset() {
 
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Stopping proxy for ${socket##*.proxy-}. "
-    	ssh -S "$socket" -O exit $PROXY_HOST
+		ssh -S "$socket" -O exit $PROXY_HOST
 	done
 
 	cat <<\EOT > "$PAC_FILE"
