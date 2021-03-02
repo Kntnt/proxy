@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
 # Copyright (c) 2020 Kntnt Sweden AB. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # 1. Redistributions of source code must retain the above copyright notice,
 #    this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the copyright holder nor the names of its
 #    contributors may be used to endorse or promote products derived from this
 #    software without specific prior written permission.
@@ -38,96 +38,96 @@ SOCKET_DIR="$HOME"
 PROXY_HOST=127.0.0.1
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	GNU_SED=sed
-	GNU_FIND=find
-	GNU_GREP=grep
+    GNU_SED=sed
+    GNU_FIND=find
+    GNU_GREP=grep
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-	if which gsed > /dev/null && which gfind > /dev/null; then
-		GNU_SED=gsed
-		GNU_FIND=gfind
-		GNU_GREP=ggrep
-	else
-		echo "Install GNU sed, GNU find and GNU grep."
-		exit 2
-	fi
+    if which gsed > /dev/null && which gfind > /dev/null; then
+        GNU_SED=gsed
+        GNU_FIND=gfind
+        GNU_GREP=ggrep
+    else
+        echo "Install GNU sed, GNU find and GNU grep."
+        exit 2
+    fi
 else
-	echo "This script is developed for GNU Linux and Mac OS X with GNU sed and find."
-	exit 3
+    echo "This script is developed for GNU Linux and Mac OS X with GNU sed and find."
+    exit 3
 fi
 
 function start() {
 
-	local socket="$SOCKET_DIR/.proxy-$1"
+    local socket="$SOCKET_DIR/.proxy-$1"
 
-	local port=$(comm -23 <(seq 49152 65535) <(netstat -an | $GNU_GREP LISTEN | awk -F '  +' '{print $4}' | $GNU_GREP -Po "\d+$" | sort) | shuf | head -n 1)
+    local port=$(comm -23 <(seq 49152 65535) <(netstat -an | $GNU_GREP LISTEN | awk -F '  +' '{print $4}' | $GNU_GREP -Po "\d+$" | sort) | shuf | head -n 1)
 
-	if [[ -S $socket ]]; then
-		echo "There is already a proxy for $1."
-		exit 4
-	fi
+    if [[ -S $socket ]]; then
+        echo "There is already a proxy for $1."
+        exit 4
+    fi
 
-	echo "Starting proxy for $1."
-	echo "Remember to add 127.0.0.1 $1 to the /etc/hosts of $2."
+    echo "Starting proxy for $1."
+    echo "Remember to add 127.0.0.1 $1 to the /etc/hosts of $2."
     ssh -MS "$SOCKET_DIR/.proxy-$1" -fnNT -D 0.0.0.0:$port $2
-	$GNU_SED -r "/^\s*return \"DIRECT\";\s*$/i \\\\tif (dnsDomainIs(host, \"$1\")) return \"SOCKS5 $PROXY_HOST:$port; DIRECT\";" -i "$PAC_FILE"
+    $GNU_SED -r "/^\s*return \"DIRECT\";\s*$/i \\\\tif (dnsDomainIs(host, \"$1\")) return \"SOCKS5 $PROXY_HOST:$port; DIRECT\";" -i "$PAC_FILE"
 
 }
 
 function stop() {
 
-	local socket="$SOCKET_DIR/.proxy-$1"
+    local socket="$SOCKET_DIR/.proxy-$1"
 
-	if [[ ! -S $socket ]]; then
-		echo "There is no proxy for $1."
-		exit 5
-	fi
+    if [[ ! -S $socket ]]; then
+        echo "There is no proxy for $1."
+        exit 5
+    fi
 
-	echo -n "Stopping proxy for $1. "
-	ssh -S "$SOCKET_DIR/.proxy-$1" -O exit $PROXY_HOST
-	$GNU_SED -r "/dnsDomainIs\(host, \"$1\"\)/d" -i "$PAC_FILE"
+    echo -n "Stopping proxy for $1. "
+    ssh -S "$SOCKET_DIR/.proxy-$1" -O exit $PROXY_HOST
+    $GNU_SED -r "/dnsDomainIs\(host, \"$1\"\)/d" -i "$PAC_FILE"
 
 }
 
 function list() {
-	local socket
-	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
-		echo -n "Checking proxy for ${socket##*.proxy-}: "
-    	ssh -S "$socket" -O check $PROXY_HOST
-	done
+    local socket
+    for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
+        echo -n "Checking proxy for ${socket##*.proxy-}: "
+        ssh -S "$socket" -O check $PROXY_HOST
+    done
 }
 
 function reset() {
 
-	local socket
+    local socket
 
-	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
-		echo -n "Stopping proxy for ${socket##*.proxy-}. "
-    	ssh -S "$socket" -O exit $PROXY_HOST
-	done
+    for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
+        echo -n "Stopping proxy for ${socket##*.proxy-}. "
+        ssh -S "$socket" -O exit $PROXY_HOST
+    done
 
-	cat <<\EOT > "$PAC_FILE"
+    cat <<\EOT > "$PAC_FILE"
 function FindProxyForURL(url, host) {
-	return "DIRECT";
+    return "DIRECT";
 }
 EOT
 
 }
 
 if (( $# == 1 )) && [[ $1 == 'list' ]]; then
-	list
+    list
 elif (( $# == 1 )) && [[ $1 == 'reset' ]]; then
-	reset
+    reset
 elif (( $# == 2 )) && [[ $1 == 'start' ]]; then
-	start $2 $DEFAULT_SERVER
+    start $2 $DEFAULT_SERVER
 elif (( $# == 3 )) && [[ $1 == 'start' ]]; then
-	start $2 $3	
+    start $2 $3
 elif (( $# == 2 )) && [[ $1 == 'stop' ]]; then
-	stop $2
+    stop $2
 else
-	echo "Usage: $(basename $0) start <domain> [<server>]"
-	echo "Usage: $(basename $0) stop <domain>"
-	echo "Usage: $(basename $0) reset"
-	echo "Usage: $(basename $0) list"
-	echo "See:   https://github.com/Kntnt/proxy"
-	exit 1
+    echo "Usage: $(basename $0) start <domain> [<server>]"
+    echo "Usage: $(basename $0) stop <domain>"
+    echo "Usage: $(basename $0) reset"
+    echo "Usage: $(basename $0) list"
+    echo "See:   https://github.com/Kntnt/proxy"
+    exit 1
 fi
