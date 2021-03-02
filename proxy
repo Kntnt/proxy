@@ -59,7 +59,7 @@ function start() {
 
 	local socket="$SOCKET_DIR/.proxy-$1"
 
-	local port=$(comm -23 <(seq 49152 65535) <(netstat -an | $GNU_GREP LISTEN | awk -F '  +' '{print $4}' | $GNU_GREP -Po "\d+$") | shuf | head -n 1)
+	local port=$(comm -23 <(seq 49152 65535) <(netstat -an | $GNU_GREP LISTEN | awk -F '  +' '{print $4}' | $GNU_GREP -Po "\d+$" | sort) | shuf | head -n 1)
 
 	if [[ -S $socket ]]; then
 		echo "There is already a proxy for $1."
@@ -67,6 +67,7 @@ function start() {
 	fi
 
 	echo "Starting proxy for $1."
+	echo "Remember to add 127.0.0.1 $1 to the /etc/hosts of $2."
     ssh -MS "$SOCKET_DIR/.proxy-$1" -fnNT -D 0.0.0.0:$port $2
 	$GNU_SED -r "/^\s*return \"DIRECT\";\s*$/i \\\\tif (dnsDomainIs(host, \"$1\")) return \"SOCKS5 $PROXY_HOST:$port; DIRECT\";" -i "$PAC_FILE"
 
@@ -88,14 +89,11 @@ function stop() {
 }
 
 function list() {
-
 	local socket
-	
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Checking proxy for ${socket##*.proxy-}: "
-		ssh -S "$socket" -O check $PROXY_HOST
+    	ssh -S "$socket" -O check $PROXY_HOST
 	done
-
 }
 
 function reset() {
@@ -104,7 +102,7 @@ function reset() {
 
 	for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
 		echo -n "Stopping proxy for ${socket##*.proxy-}. "
-		ssh -S "$socket" -O exit $PROXY_HOST
+    	ssh -S "$socket" -O exit $PROXY_HOST
 	done
 
 	cat <<\EOT > "$PAC_FILE"
