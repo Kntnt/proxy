@@ -89,11 +89,14 @@ function stop() {
 }
 
 function list() {
+
     local socket
+
     for socket in $($GNU_FIND $SOCKET_DIR -maxdepth 1 -name ".proxy-*" -type s); do
         echo -n "Checking proxy for ${socket##*.proxy-}: "
         ssh -S "$socket" -O check $PROXY_HOST
     done
+
 }
 
 function reset() {
